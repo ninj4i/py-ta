@@ -1,4 +1,6 @@
 from math import sqrt, pi, atan, sin, cos
+import ezdxf
+from ezdxf.enums import TextEntityAlignment
 
 # potrzebne definicjie funkcji i obiektów
 def obl_az(P, K):
@@ -36,7 +38,6 @@ class Punkt:
 
     def odl_do(self, other):
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
-
 
 
     def __sub__(self, other):
@@ -110,6 +111,46 @@ while hektometr:
     with open(f"dane\\{hektometr}.txt", 'w') as plik:
         plik.write(' '.join(wyn))
 
+    wysokosci = []
+    for p in lista:
+        wysokosci.append(wykaz_pkt[p].h)
+
+    print(wysokosci)
+
+    h_lim = min(wysokosci)//1-1
+
+    for i, h in enumerate(wysokosci):
+        wysokosci[i] = round(h - h_lim,2)
+    print(len(wysokosci))
+
+    biezace = []
+    for p in lista:
+        biezace.append(LP.rzutuj(wykaz_pkt[p]) - LP.rzutuj(wykaz_pkt[os]))
+    print(len(biezace))
+
+    print(list(zip(biezace,wysokosci)))
+
+    doc = ezdxf.new()
+    prz = list(zip(biezace,wysokosci))
+    msp = doc.modelspace()
+
+    msp.add_polyline2d(list(zip(biezace,wysokosci)))
+
+    for p in list(zip(biezace,wysokosci)):
+        msp.add_line(p,(p[0],0))
+        msp.add_text(f"{p[0]:+.2f} ", height = 0.2, rotation=90).set_placement((p[0],0),align=TextEntityAlignment.MIDDLE_RIGHT)
+        msp.add_text(f"{p[1]+h_lim:+.2f} ", height = 0.2, rotation=90).set_placement((p[0],-1),align=TextEntityAlignment.MIDDLE_RIGHT)
+
+    for dupa in zip(lista,prz):
+        msp.add_text(f"{dupa[0]}",height = 0.2).set_placement(dupa[1], align=TextEntityAlignment.BOTTOM_CENTER)
+
+    for i, p in enumerate(prz[:-1]):
+        msp.add_line((prz[i][0],0), (prz[i+1][0],0))
+
+    msp.add_text(f"{h_lim}",height = 0.35).set_placement((prz[0][0],0),align=TextEntityAlignment.BOTTOM_RIGHT)
+
+
+    doc.saveas(f"DXF\\{hektometr}.dxf")
 
 print("miłego dnia. (enter żeby wyjść)")
 input()
